@@ -17,6 +17,10 @@ def index():
     return render_template('index.html')
 
 # === GRAFIK POLINOMIAL ===
+@app.route('/graph', methods=['GET'])
+def graph_page():
+    return render_template("graph.html")
+
 @app.route("/graph", methods=["GET", "POST"])
 def graph():
     if request.method == "POST":
@@ -24,7 +28,7 @@ def graph():
         func = data["function"]
 
         # Buat rentang x
-        x_values = np.linspace(-10, 10, 200)
+        x_values = np.linspace(0, 10, 200)
 
         y_values = []
         for x in x_values:
@@ -41,7 +45,7 @@ def graph():
             file_data.append({
                 "type": "graph",
                 "function": func,
-                "x_min": -10,
+                "x_min": 0,
                 "x_max": 10,
                 "description": "Visualisasi grafik fungsi polynomial"
             })

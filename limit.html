@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container text-center">
+  <h2 class="mb-4">Visualisasi Limit Dua Sisi + Pilihan Model Soal</h2>
+
+  <!-- DROPDOWN MODEL SOAL -->
+  <div class="mb-3">
+    <select id="modelSelect" class="form-select">
+      <option value="">-- Pilih Model Soal --</option>
+      <option value="np.sqrt(x)">√x (akar)</option>
+      <option value="(x**2 - 1)/(x - 1)">(x² - 1)/(x - 1) — bentuk tak tentu</option>
+      <option value="np.sin(x)/x">sin(x) / x — limit trigonometrik</option>
+      <option value="abs(x)/x">|x|/x — limit tidak ada</option>
+      <option value="np.exp(x)">e^x — eksponensial</option>
+      <option value="(x**2 - 9)/(x - 3)">(x² - 9)/(x - 3)</option>
+      <option value="(x**3 - 8)/(x - 2)">(x³ - 8)/(x - 2)</option>
+      <option value="(np.sin(x) - x)/(x**3)">sin(x) - x / x³</option>
+    </select>
+  </div>
+
+  <form id="limitForm" class="mb-3">
+    <input type="text" id="func" class="form-control mb-2"
+      placeholder="Masukkan fungsi, contoh: (x**2 - 1)/(x - 1)" required>
+
+    <input type="number" id="a" class="form-control mb-2"
+      placeholder="Masukkan titik a, contoh: 1" required>
+
+    <button type="submit" class="btn btn-custom">Hitung Limit</button>
+  </form>
+
+  <p id="result" class="mt-3 fw-bold"></p>
+  <p id="conclusion" class="mt-2 fs-5"></p>
+
+  <canvas id="limitChart" height="100"></canvas>
+</div>
+
+<script>
+// === DROPDOWN: Mengisi input fungsi otomatis ===
+document.getElementById("modelSelect").addEventListener("change", function() {
+  const selectedFunc = this.value;
+  if (selectedFunc) {
+    document.getElementById("func").value = selectedFunc;
+  }
+});
+
+const ctx = document.getElementById('limitChart');
+let chart;
+
+// Ambil data limit dari server
+async function getLimit(func, a) {
+  const res = await fetch("/limit", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ function: func, a: parseFloat(a) })
+  });
+  return await res.json();
+}
+
+document.getElementById("limitForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const func = document.getElementById("func").value;
+  const a = document.getElementById("a").value;
+
+  const data = await getLimit(func, a);
+
+  document.getElementById("result").innerText =
+    `Limit f(x) saat x → ${a} adalah ≈ ${data.limit.toFixed(1)}`;
+
+  // DETEKSI LIMIT ADA/TIDAK
+  const left = data.left;
+  const right = data.right;
+
+  let conclusionText = "";
+  let color = "";
+
+  if (left === null || right === null || data.limit === null) {
+    conclusionText = "⚠️ Fungsi tidak terdefinisi di sekitar titik tersebut.";
+    color = "orange";
+
+  } else if (Math.abs(left - right) < 1e-6) {
+    conclusionText =
+      `✅ Limit ADA karena limit kiri (${left.toFixed(1)}) dan limit kanan (${right.toFixed(1)}) sama.`;
+    color = "green";
+
+  } else {
+    conclusionText =
+      `❌ Limit TIDAK ADA karena limit kiri (${left.toFixed(1)}) ≠ limit kanan (${right.toFixed(1)}).`;
+    color = "red";
+  }
+
+  document.getElementById("conclusion").innerHTML =
+    `<span style="color:${color};">${conclusionText}</span>`;
+
+  // Hapus chart lama
+  if (chart) chart.destroy();
+
+  // Chart baru
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: data.x,
+      datasets: [
+        {
+          label: `f(x) = ${func}`,
+          data: data.y,
+          borderColor: "#f48fb1",
+          borderWidth: 3,
+          fill: false,
+          tension: 0.2
+        },
+        {
+          label: "Dari kiri →",
+          data: [{x: data.x[0], y: data.y[0]}],
+          borderColor: "#2196f3",
+          backgroundColor: "#2196f3",
+          pointRadius: 6,
+          type: "scatter"
+        },
+        {
+          label: "← Dari kanan",
+          data: [{x: data.x[data.x.length-1], y: data.y[data.y.length-1]}],
+          borderColor: "#e53935",
+          backgroundColor: "#e53935",
+          pointRadius: 6,
+          type: "scatter"
+        }
+      ]
+    },
+    options: {
+      animation: false,
+      scales: {
+        x: { type: 'linear' },
+        y: { type: 'linear' }
+      }
+    }
+  });
+
+  // ANIMASI TITIK
+  let leftIndex = 0;
+  let rightIndex = data.x.length - 1;
+
+  function animateTwoSides() {
+    if (leftIndex >= rightIndex) return;
+
+    chart.data.datasets[1].data = [
+      { x: data.x[leftIndex], y: data.y[leftIndex] }
+    ];
+
+    chart.data.datasets[2].data = [
+      { x: data.x[rightIndex], y: data.y[rightIndex] }
+    ];
+
+    chart.update();
+
+    leftIndex++;
+    rightIndex--;
+
+    requestAnimationFrame(animateTwoSides);
+  }
+
+  animateTwoSides();
+});
+</script>
+
+{% endblock %}

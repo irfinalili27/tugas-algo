@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container text-center">
+  <h2 class="mb-4">Visualisasi Grafik Fungsi Polinomial</h2>
+
+  <!-- Form input fungsi -->
+  <form id="graphForm" class="mb-3">
+    <input type="text" id="functionInput" class="form-control mb-2" placeholder="Masukkan fungsi, contoh: x*x - 4*x + 3" required>
+    <button type="submit" class="btn btn-custom">Tampilkan Grafik</button>
+  </form>
+
+  <canvas id="polyChart" height="100"></canvas>
+</div>
+
+<script>
+const ctx = document.getElementById('polyChart');
+let chart;
+
+// fungsi untuk menggambar grafik
+function drawGraph(data, funcStr) {
+  const xValues = data.x;
+  const yValues = data.y;
+
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xValues,
+      datasets: [{
+        label: `f(x) = ${funcStr}`,
+        data: yValues,
+        borderColor: '#64b5f6',
+        borderWidth: 3,
+        fill: false
+      }]
+    }
+  });
+}
+
+// kirim fungsi ke Flask (backend)
+document.getElementById("graphForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const func = document.getElementById("functionInput").value;
+
+  const res = await fetch("/graph", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({function: func})
+  });
+
+  const data = await res.json();
+  drawGraph(data, func);
+});
+</script>
+{% endblock %}

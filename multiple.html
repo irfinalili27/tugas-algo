@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container text-center">
+  <h2 class="mb-4">📈 Multiple Function Plot</h2>
+
+  <form id="multiForm" class="mb-3">
+    <div id="inputs">
+      <div class="input-group mb-2">
+        <input type="text" class="form-control func-input"
+          placeholder="Masukkan fungsi, contoh: x**2" required>
+        <button type="button" class="btn btn-danger remove-btn" onclick="removeField(this)">X</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-secondary mb-2" onclick="addField()">
+      + Tambah Fungsi
+    </button>
+
+    <input type="number" id="xMin" class="form-control mb-2" value="-10" placeholder="x minimum">
+    <input type="number" id="xMax" class="form-control mb-2" value="10" placeholder="x maksimum">
+
+    <button type="submit" class="btn btn-custom">Plot Grafik</button>
+  </form>
+
+  <button id="downloadBtn" class="btn btn-success mb-3" style="display:none;">
+    📥 Download Grafik
+  </button>
+
+  <canvas id="multiChart" height="120"></canvas>
+</div>
+
+<script>
+let chart;
+
+// ===== Tambah Input Fungsi =====
+function addField() {
+  const div = document.getElementById("inputs");
+
+  const group = document.createElement("div");
+  group.className = "input-group mb-2";
+
+  group.innerHTML = `
+    <input type="text" class="form-control func-input"
+      placeholder="Masukkan fungsi, contoh: np.sin(x)">
+    <button type="button" class="btn btn-danger remove-btn"
+      onclick="removeField(this)">X</button>
+  `;
+
+  div.appendChild(group);
+}
+
+// ===== Hapus Input Fungsi =====
+function removeField(btn) {
+  btn.parentElement.remove();
+}
+
+// ===== Generate Warna Random =====
+function randomColor() {
+  return "#" + Math.floor(Math.random()*16777215).toString(16);
+}
+
+// ===== Submit Form =====
+document.getElementById("multiForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const funcInputs = document.querySelectorAll(".func-input");
+  const functions = [...funcInputs].map(x => x.value);
+
+  const xMin = document.getElementById("xMin").value;
+  const xMax = document.getElementById("xMax").value;
+
+  const response = await fetch("/multiple", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      functions: functions,
+      x_min: xMin,
+      x_max: xMax
+    })
+  });
+
+  const data = await response.json();
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("multiChart"), {
+    type: "line",
+    data: {
+      labels: data.x,
+      datasets: data.results.map((item) => ({
+        label: item.function,
+        data: item.y,
+        borderColor: randomColor(),
+        borderWidth: 3,
+        fill: false,
+        tension: 0.3
+      }))
+    }
+  });
+
+  // ==== Tampilkan tombol download ====
+  document.getElementById("downloadBtn").style.display = "inline-block";
+
+  // ==== Simpan ke progress.json ====
+  await fetch("/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "multiple_plot",
+      functions: functions,
+      x_min: xMin,
+      x_max: xMax,
+      timestamp: new Date().toLocaleString()
+    })
+  });
+});
+
+// ===== Download Grafik PNG =====
+document.getElementById("downloadBtn").addEventListener("click", () => {
+  const link = document.createElement("a");
+  link.download = "multiple_plot.png";
+  link.href = document.getElementById("multiChart").toDataURL();
+  link.click();
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container text-center">
+  <h2 class="mb-4">📉 Optimization Lengkap (Titik Kritis + Minimum + Maksimum)</h2>
+
+  <form id="optForm" class="mb-3">
+    <input type="text" id="func" class="form-control mb-2"
+           placeholder="Masukkan fungsi, contoh: x**2 - 4*x + 5" required>
+
+    <div class="mb-2">
+      <label class="fw-bold">Mode Analisis:</label>
+      <select id="mode" class="form-control">
+        <option value="all">Cari Minimum & Maksimum</option>
+        <option value="min">Hanya Minimum</option>
+        <option value="max">Hanya Maksimum</option>
+        <option value="critical">Hanya Titik Kritis (f’(x)=0)</option>
+      </select>
+    </div>
+
+    <input type="number" id="xMin" class="form-control mb-2" value="-10" placeholder="x minimum">
+    <input type="number" id="xMax" class="form-control mb-2" value="10" placeholder="x maksimum">
+
+    <button type="submit" class="btn btn-custom">Hitung Optimasi</button>
+  </form>
+
+  <p id="criticalResult" class="fw-bold"></p>
+  <p id="minResult" class="fw-bold"></p>
+  <p id="maxResult" class="fw-bold"></p>
+
+  <h4 class="mt-3">📈 Grafik Fungsi</h4>
+  <canvas id="optChart" height="110"></canvas>
+
+  <h4 class="mt-4">📉 Grafik Turunan f'(x)</h4>
+  <canvas id="derChart" height="110"></canvas>
+
+  <button class="btn btn-success mt-3" onclick="downloadCharts()">Download Grafik PNG</button>
+
+  <h4 class="mt-5">📊 Tabel Nilai f(x) dan f’(x)</h4>
+  <table class="table table-bordered mt-3" id="dataTable">
+    <thead>
+      <tr>
+        <th>x</th>
+        <th>f(x)</th>
+        <th>f’(x)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+let chart1, chart2;
+
+document.getElementById("optForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const func = document.getElementById("func").value;
+  const xMin = parseFloat(document.getElementById("xMin").value);
+  const xMax = parseFloat(document.getElementById("xMax").value);
+  const mode = document.getElementById("mode").value;
+
+  const response = await fetch("/optimization", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      function: func,
+      x_min: xMin,
+      x_max: xMax,
+      mode: mode
+    })
+  });
+
+  const data = await response.json();
+
+  // Tampilkan hasil
+  document.getElementById("criticalResult").innerText =
+    `Titik Kritis: ${JSON.stringify(data.critical)}`;
+
+  if (data.min)
+    document.getElementById("minResult").innerText =
+      `Minimum: (${data.min.x.toFixed(3)}, ${data.min.y.toFixed(3)})`;
+  else document.getElementById("minResult").innerText = "";
+
+  if (data.max)
+    document.getElementById("maxResult").innerText =
+      `Maximum: (${data.max.x.toFixed(3)}, ${data.max.y.toFixed(3)})`;
+  else document.getElementById("maxResult").innerText = "";
+
+  // Grafik f(x)
+  if (chart1) chart1.destroy();
+  chart1 = new Chart(document.getElementById("optChart"), {
+    type: "line",
+    data: {
+      labels: data.x,
+      datasets: [{
+        label: "f(x)",
+        data: data.y,
+        borderColor: "#2979ff",
+        borderWidth: 3,
+        fill: false
+      }]
+    }
+  });
+
+  // Grafik f’(x)
+  if (chart2) chart2.destroy();
+  chart2 = new Chart(document.getElementById("derChart"), {
+    type: "line",
+    data: {
+      labels: data.x,
+      datasets: [{
+        label: "f’(x)",
+        data: data.dy,
+        borderColor: "#ff1744",
+        borderWidth: 3,
+        fill: false
+      }]
+    }
+  });
+
+  // Tabel nilai
+  const tbody = document.querySelector("#dataTable tbody");
+  tbody.innerHTML = "";
+  for (let i = 0; i < data.x.length; i += 20) {
+    tbody.innerHTML += `
+      <tr>
+        <td>${data.x[i].toFixed(2)}</td>
+        <td>${data.y[i].toFixed(4)}</td>
+        <td>${data.dy[i].toFixed(4)}</td>
+      </tr>`;
+  }
+});
+
+// Download PNG
+function downloadCharts() {
+  const link = document.createElement("a");
+  link.download = "optimization.png";
+  link.href = document.getElementById("optChart").toDataURL();
+  link.click();
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+[
+  {
+    "question": "Turunan dari f(x) = x² adalah ...",
+    "options": ["2x", "x", "x² + 1", "2"],
+    "correct": "2x"
+  },
+  {
+    "question": "Limit dari (x² - 9) / (x - 3) saat x → 3 adalah ...",
+    "options": ["3", "6", "9", "Tak terdefinisi"],
+    "correct": "6"
+  },
+  {
+    "question": "Integral dari f(x) = 2x adalah ...",
+    "options": ["x² + C", "2x + C", "x + C", "4x + C"],
+    "correct": "x² + C"
+  },
+  {
+    "question": "Garis singgung f(x) = x³ di x=2 memiliki gradien ...",
+    "options": ["3", "6", "8", "12"],
+    "correct": "12"
+  },
+  {
+    "question": "Turunan pertama dari sin(x) adalah ...",
+    "options": ["cos(x)", "-cos(x)", "sin(x)", "-sin(x)"],
+    "correct": "cos(x)"
+  }
+]

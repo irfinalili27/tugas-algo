@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container text-center">
+  <h2 class="mb-4">Turunan Fungsi & Garis Singgung</h2>
+
+  <form id="derivForm" class="mb-3">
+    <input type="text" id="funcInput" class="form-control mb-2"
+           placeholder="Contoh: x^2 + sin(x)" required>
+
+    <input type="number" id="aInput" class="form-control mb-2"
+           placeholder="Titik a (boleh dikosongi)">
+    
+    <button type="submit" class="btn btn-custom">Hitung</button>
+  </form>
+
+  <p id="result" class="fw-bold mt-2"></p>
+
+  <h4 class="mt-4">Grafik Fungsi & Garis Singgung</h4>
+  <canvas id="derivChart" height="80"></canvas>
+
+  <h4 class="mt-4">Grafik Turunan f′(x)</h4>
+  <canvas id="dChart" height="80"></canvas>
+</div>
+
+<script>
+let chart1, chart2;
+
+// konversi input matematika
+function convertMath(func) {
+  return func
+    .replace(/\^/g, "**")
+    .replace(/sin/g, "np.sin")
+    .replace(/cos/g, "np.cos")
+    .replace(/tan/g, "np.tan")
+    .replace(/log/g, "np.log")
+    .replace(/exp/g, "np.exp")
+    .replace(/sqrt/g, "np.sqrt");
+}
+
+document.getElementById("derivForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const raw = document.getElementById("funcInput").value;
+  const a = document.getElementById("aInput").value;
+  const converted = convertMath(raw);
+
+  const res = await fetch("/derivative", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ function: converted, a: a })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("result").textContent =
+    `Turunan f′(a) = ${data.derivative_at_a?.toFixed(5)}`;
+
+  if (chart1) chart1.destroy();
+  if (chart2) chart2.destroy();
+
+  // Grafik fungsi & tangen
+  chart1 = new Chart(document.getElementById("derivChart"), {
+    type: "line",
+    data: {
+      labels: data.x,
+      datasets: [
+        { label: "f(x)", data: data.y, borderColor: "#42a5f5", fill: false },
+        { label: "Garis Singgung", data: data.tangent, borderColor: "#e91e63", borderDash: [6,4], fill: false }
+      ]
+    }
+  });
+
+  // Grafik turunan
+  chart2 = new Chart(document.getElementById("dChart"), {
+    type: "line",
+    data: {
+      labels: data.x,
+      datasets: [
+        { label: "f′(x)", data: data.dy, borderColor: "#66bb6a", fill: false }
+      ]
+    }
+  });
+});
+</script>
+{% endblock %}
