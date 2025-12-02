@@ -490,7 +490,7 @@ def qrcode_png():
         "2. Rafino Navisa Arvidiansa (240210101055)\n"
         "3. Irfina Eka Norlaili (240210101075)\n\n"
         "🏫 Pendidikan Matematika, FKIP, Universitas Jember\n"
-        "🔗 Repository: https://github.com/username/Calculus_Visualizer"
+        "🔗 Repository: https://github.com/irfinalili27/tugas-algo.git"
     )
 
     qr = qrcode.QRCode(
